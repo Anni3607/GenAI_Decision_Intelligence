@@ -1,106 +1,122 @@
+# =====================================================
+# CONFLICT ANALYSIS ENGINE
+# =====================================================
 
-def calculate_confidence(
+def analyze_conflicts(context):
 
-    context,
-    conflicts,
-    questions,
-    user_input
-):
+    conflicts = []
 
-    confidence = 1.0
-
-    # =====================================
-    # INPUT LENGTH
-    # =====================================
-
-    word_count = len(
-        user_input.split()
-    )
-
-    if word_count < 10:
-
-        confidence -= 0.25
-
-    elif word_count < 20:
-
-        confidence -= 0.15
-
-
-    # =====================================
-    # PRIORITY RICHNESS
-    # =====================================
-
-    priorities = context.get(
-        "priorities",
-        {}
-    )
-
-    num_priorities = len(
-        priorities
-    )
-
-    if num_priorities <= 1:
-
-        confidence -= 0.25
-
-    elif num_priorities <= 2:
-
-        confidence -= 0.15
-
-
-    # =====================================
-    # CONFLICT PENALTY
-    # =====================================
-
-    num_conflicts = len(
-        conflicts
-    )
-
-    confidence -= (
-        num_conflicts * 0.08
-    )
-
-
-    # =====================================
-    # TOO MANY QUESTIONS
-    # =====================================
-
-    if len(questions) >= 4:
-
-        confidence -= 0.10
-
-
-    # =====================================
-    # EMPTY STYLE INPUTS
-    # =====================================
-
-    weak_patterns = [
-
-        "...",
-        "idk",
-        "anything",
-        "good career"
+    priorities = [
+        p.lower()
+        for p in context.get(
+            "priorities",
+            []
+        )
     ]
 
-    lower_input = user_input.lower()
+    concerns = [
+        c.lower()
+        for c in context.get(
+            "concerns",
+            []
+        )
+    ]
 
-    for pattern in weak_patterns:
+    goals = [
+        g.lower()
+        for g in context.get(
+            "goals",
+            []
+        )
+    ]
 
-        if pattern in lower_input:
+    # =================================================
+    # COMMON TRADEOFF DETECTION
+    # =================================================
 
-            confidence -= 0.25
+    if (
+        "high salary" in priorities
+        and "low stress" in priorities
+    ):
 
+        conflicts.append(
+            "High salary and low stress may conflict in many industries."
+        )
 
-    # =====================================
-    # CLAMP
-    # =====================================
+    if (
+        "career growth" in priorities
+        and "work-life balance" in priorities
+    ):
 
-    confidence = max(
-        0.1,
-        min(confidence, 0.95)
-    )
+        conflicts.append(
+            "Aggressive career growth may reduce work-life balance."
+        )
 
-    return round(
-        confidence,
-        2
-    )
+    if (
+        "flexibility" in priorities
+        and "stability" in priorities
+    ):
+
+        conflicts.append(
+            "Highly flexible roles may offer less long-term stability."
+        )
+
+    if (
+        "startup" in goals
+        and "low risk" in concerns
+    ):
+
+        conflicts.append(
+            "Startup environments usually involve higher uncertainty and risk."
+        )
+
+    return conflicts
+
+# =====================================================
+# CONFIDENCE SCORE
+# =====================================================
+
+def calculate_confidence_score(
+    ranked_results,
+    conflicts
+):
+
+    if ranked_results.empty:
+        return "Low"
+
+    top_score = ranked_results.iloc[0][
+        "final_score"
+    ]
+
+    second_score = ranked_results.iloc[1][
+        "final_score"
+    ]
+
+    gap = top_score - second_score
+
+    # =================================================
+    # BASE CONFIDENCE
+    # =================================================
+
+    if gap >= 20:
+        confidence = "High"
+
+    elif gap >= 10:
+        confidence = "Medium"
+
+    else:
+        confidence = "Low"
+
+    # =================================================
+    # CONFLICT PENALTY
+    # =================================================
+
+    if len(conflicts) >= 3:
+
+        confidence = "Low"
+
+    elif len(conflicts) >= 1 and confidence == "High":
+
+        confidence = "Medium"
+
+    return confidence
