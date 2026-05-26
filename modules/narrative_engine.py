@@ -1,93 +1,44 @@
-
 from modules.ai_reasoning import (
     generate_reasoning
 )
 
-from modules.fact_engine import (
-    generate_fact_summary
-)
-
+# =====================================================
+# NARRATIVE GENERATION
+# =====================================================
 
 def generate_intelligent_narrative(
-    context,
+    user_input,
     ranked_results,
     conflicts,
     confidence
 ):
 
-    best = ranked_results.iloc[0]
-
-    second = ranked_results.iloc[1]
-
-    fact_summary = generate_fact_summary(
-        ranked_results
-    )
+    top_option = ranked_results.iloc[0]["name"]
 
     prompt = f"""
+You are an advanced AI decision strategist.
 
-You are an expert AI decision strategist.
+User Context:
+{user_input}
 
-IMPORTANT RULES:
+Top Recommended Option:
+{top_option}
 
-- NEVER invent numerical facts
-- NEVER change factual labels
-- ONLY interpret the provided facts
-- DO NOT claim low stress if stress is high
-- DO NOT hallucinate metrics
-- ONLY discuss implications
-- Focus on psychological fit
-- Focus on tradeoffs
-- Focus on sustainability
-- Maximum 250 words
-
-====================================
-FACTUAL PROFILE
-====================================
-
-Top Option:
-{best['name']}
-
-Deterministic Facts:
-{fact_summary}
-
-====================================
-SECOND OPTION
-====================================
-
-{second.to_dict()}
-
-====================================
-USER CONTEXT
-====================================
-
-{context}
-
-====================================
-CONFLICTS
-====================================
-
+Detected Conflicts:
 {conflicts}
 
-====================================
-CONFIDENCE
-====================================
-
+Confidence Level:
 {confidence}
 
-====================================
-TASK
-====================================
-
-Generate a grounded recommendation narrative.
-
-ONLY interpret implications from the deterministic facts.
-
-DO NOT invent or alter factual attributes.
-
+Generate:
+1. A strategic explanation
+2. Tradeoff analysis
+3. Why this option ranks highest
+4. Practical real-world interpretation
 """
 
-    narrative = generate_reasoning(
+    response = generate_reasoning(
         prompt
     )
 
-    return narrative
+    return response
