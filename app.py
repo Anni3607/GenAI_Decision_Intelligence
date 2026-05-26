@@ -1,23 +1,9 @@
-import os
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 
-from openai import OpenAI
 from modules.master_pipeline import run_decision_analysis
-
-# =====================================================
-# API CONFIG
-# =====================================================
-
-# WARNING:
-# Never upload this file publicly with real keys inside it.
-
-OPENAI_API_KEY = "sk-proj-KrxN89JgyCqQzDLipRnkju1tn6mRzzDeoPsDWRjR939mWRBaHmAjhiaA7zz6sRSId9Mh-sst7BT3BlbkFJfG1QNx-Adj"
-GROQ_API_KEY = "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"
-
-# Optional OpenAI Client
-client = OpenAI(api_key=OPENAI_API_KEY)
+from modules.domain_criteria import DOMAIN_CRITERIA
 
 # =====================================================
 # PAGE CONFIG
@@ -50,13 +36,6 @@ st.markdown(
         color: #f8fafc;
     }
 
-    .metric-box {
-        padding: 15px;
-        border-radius: 10px;
-        background-color: #1e293b;
-        margin-bottom: 10px;
-    }
-
     </style>
     """,
     unsafe_allow_html=True
@@ -70,8 +49,8 @@ st.title("🧠 GenAI Decision Intelligence System")
 
 st.markdown(
     """
-Hybrid Explainable AI Platform for intelligent decision analysis,
-tradeoff evaluation, conflict detection, and grounded narrative reasoning.
+Universal Explainable AI Platform for decision analysis,
+tradeoff evaluation, conflict detection, and strategic reasoning.
 """
 )
 
@@ -79,98 +58,159 @@ tradeoff evaluation, conflict detection, and grounded narrative reasoning.
 # SIDEBAR
 # =====================================================
 
-st.sidebar.title("⚙️ Decision Input")
+st.sidebar.title("⚙️ Decision Setup")
+
+# =====================================================
+# DOMAIN SELECTION
+# =====================================================
+
+domain = st.sidebar.selectbox(
+    "Select Decision Domain",
+    [
+        "Career",
+        "Education",
+        "Investment",
+        "Tech Purchase",
+        "Food",
+        "Fitness"
+    ]
+)
+
+criteria = DOMAIN_CRITERIA[domain]
+
+# =====================================================
+# USER CONTEXT
+# =====================================================
 
 user_input = st.sidebar.text_area(
-    "Describe your priorities, goals, concerns, and preferences:",
-    height=250,
-    placeholder="Example: I want strong career growth and high salary, but I also care about flexibility and avoiding burnout."
+    "Describe your priorities and goals:",
+    height=200,
+    placeholder="Example: I want strong career growth but also flexibility and low stress."
 )
+
+# =====================================================
+# OPTION INPUTS
+# =====================================================
 
 st.sidebar.markdown("---")
 
-st.sidebar.subheader("📌 Example Priorities")
-
-st.sidebar.markdown(
-    """
-- High salary
-- Career growth
-- Work-life balance
-- Flexibility
-- Low stress
-- Stability
-"""
+num_options = st.sidebar.slider(
+    "Number of Options",
+    2,
+    5,
+    2
 )
 
+option_names = []
+
+for i in range(num_options):
+
+    option = st.sidebar.text_input(
+        f"Option {i+1}",
+        placeholder="Enter option name"
+    )
+
+    option_names.append(option)
+
 # =====================================================
-# SAMPLE OPTIONS
+# WEIGHT INPUTS
 # =====================================================
 
-options = pd.DataFrame([
+st.sidebar.markdown("---")
 
-    {
-        "name": "Startup X",
-        "salary": 95,
-        "career_growth": 92,
-        "flexibility": 40,
-        "stress": 90
-    },
+st.sidebar.subheader("🎯 Criteria Importance")
 
-    {
-        "name": "Corporate Y",
-        "salary": 75,
-        "career_growth": 65,
-        "flexibility": 78,
-        "stress": 45
-    },
+weights = {}
 
-    {
-        "name": "Remote Z",
-        "salary": 68,
-        "career_growth": 60,
-        "flexibility": 95,
-        "stress": 28
+for criterion in criteria:
+
+    weights[criterion] = st.sidebar.slider(
+        f"{criterion}",
+        1,
+        10,
+        5
+    )
+
+# =====================================================
+# OPTION SCORING INPUTS
+# =====================================================
+
+st.markdown("## 📋 Option Evaluation")
+
+option_data = []
+
+for option in option_names:
+
+    if option.strip() == "":
+        continue
+
+    st.subheader(option)
+
+    scores = {
+        "name": option
     }
-])
 
-benefit_criteria = [
-    "salary",
-    "career_growth",
-    "flexibility"
-]
+    cols = st.columns(len(criteria))
 
-cost_criteria = [
-    "stress"
-]
+    for idx, criterion in enumerate(criteria):
+
+        with cols[idx]:
+
+            score = st.slider(
+                f"{criterion}",
+                1,
+                10,
+                5,
+                key=f"{option}_{criterion}"
+            )
+
+            scores[criterion] = score
+
+    option_data.append(scores)
 
 # =====================================================
-# MAIN ACTION
+# CREATE DATAFRAME
 # =====================================================
 
-if st.sidebar.button("🚀 Run Decision Analysis"):
+options_df = pd.DataFrame(option_data)
+
+# =====================================================
+# RUN ANALYSIS
+# =====================================================
+
+if st.button("🚀 Run Decision Analysis"):
+
+    if len(option_data) < 2:
+
+        st.error("Please enter at least 2 options.")
+        st.stop()
 
     if not user_input.strip():
-        st.error("Please enter your decision context.")
+
+        st.error("Please describe your priorities.")
         st.stop()
 
     with st.spinner("Running AI analysis..."):
 
         results = run_decision_analysis(
             user_input=user_input,
-            options=options,
-            benefit_criteria=benefit_criteria,
-            cost_criteria=cost_criteria
+            options=options_df,
+            criteria=criteria,
+            weights=weights
         )
 
     ranked_results = results["ranked_results"]
 
-    # =====================================================
-    # TOP METRICS
-    # =====================================================
+    # =================================================
+    # METRICS
+    # =================================================
 
     top_option = ranked_results.iloc[0]["name"]
+
     confidence = results["confidence"]
+
     conflicts = len(results["conflicts"])
+
     questions = len(results["questions"])
 
     col1, col2, col3, col4 = st.columns(4)
@@ -189,9 +229,9 @@ if st.sidebar.button("🚀 Run Decision Analysis"):
 
     st.markdown("---")
 
-    # =====================================================
+    # =================================================
     # TABS
-    # =====================================================
+    # =================================================
 
     tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
         "📊 Rankings",
@@ -202,9 +242,9 @@ if st.sidebar.button("🚀 Run Decision Analysis"):
         "📋 Full Report"
     ])
 
-    # =====================================================
+    # =================================================
     # TAB 1
-    # =====================================================
+    # =================================================
 
     with tab1:
 
@@ -215,13 +255,9 @@ if st.sidebar.button("🚀 Run Decision Analysis"):
             use_container_width=True
         )
 
-        st.success(
-            f"Recommended Option: {top_option}"
-        )
-
-    # =====================================================
+    # =================================================
     # TAB 2
-    # =====================================================
+    # =================================================
 
     with tab2:
 
@@ -229,41 +265,45 @@ if st.sidebar.button("🚀 Run Decision Analysis"):
 
         st.write(results["narrative"])
 
-    # =====================================================
+    # =================================================
     # TAB 3
-    # =====================================================
+    # =================================================
 
     with tab3:
 
-        st.subheader("Detected Tradeoffs & Conflicts")
+        st.subheader("Detected Tradeoffs")
 
         if len(results["conflicts"]) == 0:
 
-            st.success("No major conflicts detected.")
+            st.success(
+                "No major conflicts detected."
+            )
 
         else:
 
             for conflict in results["conflicts"]:
+
                 st.warning(conflict)
 
-    # =====================================================
+    # =================================================
     # TAB 4
-    # =====================================================
+    # =================================================
 
     with tab4:
 
-        st.subheader("Adaptive Clarification Questions")
+        st.subheader("Clarification Questions")
 
         for question in results["questions"]:
+
             st.info(question)
 
-    # =====================================================
+    # =================================================
     # TAB 5
-    # =====================================================
+    # =================================================
 
     with tab5:
 
-        st.subheader("Final Decision Scores")
+        st.subheader("Final Scores")
 
         fig, ax = plt.subplots(figsize=(8, 5))
 
@@ -272,47 +312,17 @@ if st.sidebar.button("🚀 Run Decision Analysis"):
             ranked_results["final_score"]
         )
 
-        ax.set_ylabel("Final Scores")
-        ax.set_title("Ranked Decision Scores")
+        ax.set_ylabel("Final Score")
+
+        ax.set_title("Option Rankings")
 
         st.pyplot(fig)
+
         plt.close(fig)
 
-        st.subheader("Criteria Comparison")
-
-        criteria = [
-            "salary",
-            "career_growth",
-            "flexibility",
-            "stress"
-        ]
-
-        fig2, ax2 = plt.subplots(figsize=(10, 5))
-
-        for _, row in ranked_results.iterrows():
-
-            values = [
-                row[c]
-                for c in criteria
-            ]
-
-            ax2.plot(
-                criteria,
-                values,
-                marker='o',
-                label=row["name"]
-            )
-
-        ax2.legend()
-
-        ax2.set_title("Criteria Comparison Across Options")
-
-        st.pyplot(fig2)
-        plt.close(fig2)
-
-    # =====================================================
+    # =================================================
     # TAB 6
-    # =====================================================
+    # =================================================
 
     with tab6:
 
@@ -323,5 +333,5 @@ if st.sidebar.button("🚀 Run Decision Analysis"):
 else:
 
     st.info(
-        "Enter your decision context in the sidebar and run the analysis."
+        "Configure your decision scenario and run the analysis."
     )
