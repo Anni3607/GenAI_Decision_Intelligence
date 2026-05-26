@@ -19,7 +19,7 @@ from modules.confidence_engine import (
 )
 
 # =====================================================
-# SIMPLE DECISION SCORING
+# SIMPLE SCORING ENGINE
 # =====================================================
 
 def score_options(
@@ -30,25 +30,13 @@ def score_options(
 
     scored_df = options.copy()
 
-    # =================================================
-    # BENEFIT SCORE
-    # =================================================
-
     scored_df["benefit_score"] = scored_df[
         benefit_criteria
     ].sum(axis=1)
 
-    # =================================================
-    # COST SCORE
-    # =================================================
-
     scored_df["cost_score"] = scored_df[
         cost_criteria
     ].sum(axis=1)
-
-    # =================================================
-    # FINAL SCORE
-    # =================================================
 
     scored_df["final_score"] = (
         scored_df["benefit_score"]
@@ -60,8 +48,9 @@ def score_options(
         ascending=False
     )
 
-    scored_df = scored_df.reset_index(
-        drop=True
+    scored_df.reset_index(
+        drop=True,
+        inplace=True
     )
 
     return scored_df
@@ -84,7 +73,7 @@ def run_decision_analysis(
         )
 
         # =============================================
-        # EXTRACT CONTEXT
+        # CONTEXT EXTRACTION
         # =============================================
 
         context = extract_decision_context(
@@ -92,17 +81,17 @@ def run_decision_analysis(
         )
 
         # =============================================
-        # SCORE OPTIONS
+        # OPTION SCORING
         # =============================================
 
         ranked_results = score_options(
-            options=options,
-            benefit_criteria=benefit_criteria,
-            cost_criteria=cost_criteria
+            options,
+            benefit_criteria,
+            cost_criteria
         )
 
         # =============================================
-        # DETECT CONFLICTS
+        # CONFLICT ANALYSIS
         # =============================================
 
         conflicts = analyze_conflicts(
@@ -133,7 +122,7 @@ def run_decision_analysis(
         if confidence == "Low":
 
             questions.append(
-                "Would you like to provide more detailed priorities?"
+                "Can you provide more detailed priorities?"
             )
 
         # =============================================
@@ -151,13 +140,13 @@ def run_decision_analysis(
         # REPORT
         # =============================================
 
-        report = f"""
+        report = f'''
 ==============================
 GENAI DECISION REPORT
 ==============================
 
 Recommended Option:
-{ranked_results.iloc[0]['name']}
+{ranked_results.iloc[0]["name"]}
 
 Confidence:
 {confidence}
@@ -167,7 +156,7 @@ Conflicts:
 
 Narrative:
 {narrative}
-"""
+'''
 
         log_event(
             "Decision analysis completed."
