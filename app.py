@@ -1,22 +1,23 @@
-
 import os
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
-from openai import OpenAI
 
+from openai import OpenAI
 from modules.master_pipeline import run_decision_analysis
 
 # =====================================================
 # API CONFIG
 # =====================================================
 
-# IMPORTANT:
-# NEVER hardcode API keys inside production code.
-# Set them using environment variables.
+# WARNING:
+# Never upload this file publicly with real keys inside it.
 
-OPENAI_API_KEY = os.getenv("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")
-GROQ_API_KEY = os.getenv("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")
+OPENAI_API_KEY = "sk-proj-KrxN89JgyCqQzDLipRnkju1tn6mRzzDeoPsDWRjR939mWRBaHmAjhiaA7zz6sRSId9Mh-sst7BT3BlbkFJfG1QNx-Adj"
+GROQ_API_KEY = "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"
+
+# Optional OpenAI Client
+client = OpenAI(api_key=OPENAI_API_KEY)
 
 # =====================================================
 # PAGE CONFIG
@@ -34,6 +35,7 @@ st.set_page_config(
 st.markdown(
     """
     <style>
+
     .main {
         background-color: #0f172a;
         color: white;
@@ -54,6 +56,7 @@ st.markdown(
         background-color: #1e293b;
         margin-bottom: 10px;
     }
+
     </style>
     """,
     unsafe_allow_html=True
@@ -273,6 +276,7 @@ if st.sidebar.button("🚀 Run Decision Analysis"):
         ax.set_title("Ranked Decision Scores")
 
         st.pyplot(fig)
+        plt.close(fig)
 
         st.subheader("Criteria Comparison")
 
@@ -304,6 +308,7 @@ if st.sidebar.button("🚀 Run Decision Analysis"):
         ax2.set_title("Criteria Comparison Across Options")
 
         st.pyplot(fig2)
+        plt.close(fig2)
 
     # =====================================================
     # TAB 6
@@ -317,6 +322,6 @@ if st.sidebar.button("🚀 Run Decision Analysis"):
 
 else:
 
-    st.info("Enter your decision context in the sidebar and run the analysis.")
-```
-
+    st.info(
+        "Enter your decision context in the sidebar and run the analysis."
+    )
