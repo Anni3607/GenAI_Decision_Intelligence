@@ -1,95 +1,74 @@
+import pandas as pd
 
 from modules.system_logger import (
     log_event,
     log_error
 )
 
-from modules.validator import (
-    validate_context
+from modules.ai_reasoning import (
+    extract_decision_context
 )
 
 from modules.narrative_engine import (
     generate_intelligent_narrative
 )
 
-from modules.ai_reasoning import (
-    extract_decision_context
-)
-
 from modules.confidence_engine import (
-    analyze_conflicts
+    analyze_conflicts,
+    calculate_confidence_score
 )
 
-from modules.adaptive_questions import (
-    generate_adaptive_questions
-)
+# =====================================================
+# SIMPLE DECISION SCORING
+# =====================================================
 
-from modules.scoring import (
-    map_priorities_to_weights
-)
-
-from modules.decision_engine import (
-    DecisionEngine
-)
-
-from modules.recommendation_engine import (
-    generate_recommendation_report
-)
-
-import importlib.util
-import os
-
-
-# ==========================================
-# LOAD CONFIDENCE MODULE
-# ==========================================
-
-PROJECT_ROOT = "/content/drive/MyDrive/GenAI_Decision_Intelligence"
-
-module_path = os.path.join(
-    PROJECT_ROOT,
-    "modules/confidence_score.py"
-)
-
-spec = importlib.util.spec_from_file_location(
-    "confidence_score",
-    module_path
-)
-
-confidence_module = importlib.util.module_from_spec(spec)
-
-spec.loader.exec_module(confidence_module)
-
-estimate_decision_confidence = (
-    confidence_module.estimate_decision_confidence
-)
-
-
-# ==========================================
-# FILTER VALID CRITERIA
-# ==========================================
-
-def filter_valid_priorities(
-    priorities,
-    valid_criteria
+def score_options(
+    options,
+    benefit_criteria,
+    cost_criteria
 ):
 
-    log_event("Decision analysis pipeline started.")
+    scored_df = options.copy()
 
-    filtered = {}
+    # =================================================
+    # BENEFIT SCORE
+    # =================================================
 
-    for key, value in priorities.items():
+    scored_df["benefit_score"] = scored_df[
+        benefit_criteria
+    ].sum(axis=1)
 
-        if key in valid_criteria:
+    # =================================================
+    # COST SCORE
+    # =================================================
 
-            filtered[key] = value
+    scored_df["cost_score"] = scored_df[
+        cost_criteria
+    ].sum(axis=1)
 
-    return filtered
+    # =================================================
+    # FINAL SCORE
+    # =================================================
 
+    scored_df["final_score"] = (
+        scored_df["benefit_score"]
+        - scored_df["cost_score"]
+    )
 
-# ==========================================
-# MASTER PIPELINE
-# ==========================================
+    scored_df = scored_df.sort_values(
+        by="final_score",
+        ascending=False
+    )
+
+    scored_df = scored_df.reset_index(
+        drop=True
+    )
+
+    return scored_df
+
+# =====================================================
+# MAIN PIPELINE
+# =====================================================
 
 def run_decision_analysis(
     user_input,
@@ -98,140 +77,132 @@ def run_decision_analysis(
     cost_criteria
 ):
 
-    # ======================================
-    # VALID CRITERIA
-    # ======================================
+    try:
 
-    valid_criteria = (
-        benefit_criteria
-        +
-        cost_criteria
-    )
-
-    # ======================================
-    # STEP 1: AI EXTRACTION
-    # ======================================
-
-    context = extract_decision_context(
-        user_input
-    )
-
-    # ======================================
-    # VALIDATION LAYER
-    # ======================================
-
-    context = validate_context(
-        context
-    )
-
-    # ======================================
-    # FILTER PRIORITIES
-    # ======================================
-
-    context["priorities"] = (
-        filter_valid_priorities(
-            context.get(
-                "priorities",
-                {}
-            ),
-            valid_criteria
+        log_event(
+            "Decision analysis started."
         )
-    )
 
-    # ======================================
-    # STEP 2: CONFLICT ANALYSIS
-    # ======================================
+        # =============================================
+        # EXTRACT CONTEXT
+        # =============================================
 
-    conflicts = analyze_conflicts(
-        context
-    )
+        context = extract_decision_context(
+            user_input
+        )
 
-    context["decision_conflicts"] = conflicts
+        # =============================================
+        # SCORE OPTIONS
+        # =============================================
 
-    # ======================================
-    # STEP 3: ADAPTIVE QUESTIONS
-    # ======================================
+        ranked_results = score_options(
+            options=options,
+            benefit_criteria=benefit_criteria,
+            cost_criteria=cost_criteria
+        )
 
-    questions = generate_adaptive_questions(
-        context
-    )
+        # =============================================
+        # DETECT CONFLICTS
+        # =============================================
 
-    # ======================================
-    # STEP 4: WEIGHT GENERATION
-    # ======================================
+        conflicts = analyze_conflicts(
+            context
+        )
 
-    weights = map_priorities_to_weights(
-        context["priorities"]
-    )
+        # =============================================
+        # CONFIDENCE SCORE
+        # =============================================
 
-    # ======================================
-    # STEP 5: MCDA ENGINE
-    # ======================================
+        confidence = calculate_confidence_score(
+            ranked_results,
+            conflicts
+        )
 
-    engine = DecisionEngine(
+        # =============================================
+        # QUESTIONS
+        # =============================================
 
-        options=options,
+        questions = []
 
-        weights=weights,
+        if len(conflicts) > 0:
 
-        benefit_criteria=benefit_criteria,
+            questions.append(
+                "Which factor matters more when tradeoffs occur?"
+            )
 
-        cost_criteria=cost_criteria
-    )
+        if confidence == "Low":
 
-    ranked_results = engine.rank_options()
+            questions.append(
+                "Would you like to provide more detailed priorities?"
+            )
 
-    # ======================================
-    # STEP 6: CONFIDENCE
-    # ======================================
+        # =============================================
+        # NARRATIVE
+        # =============================================
 
-    confidence = estimate_decision_confidence(
-        context
-    )
+        narrative = generate_intelligent_narrative(
+            user_input=user_input,
+            ranked_results=ranked_results,
+            conflicts=conflicts,
+            confidence=confidence
+        )
 
-    # ======================================
-    # STEP 7: FINAL REPORT
-    # ======================================
+        # =============================================
+        # REPORT
+        # =============================================
 
-    report = generate_recommendation_report(
-        ranked_results,
-        context
-    )
+        report = f"""
+==============================
+GENAI DECISION REPORT
+==============================
 
-    # ======================================
-    # STEP 8: NARRATIVE SYNTHESIS
-    # ======================================
+Recommended Option:
+{ranked_results.iloc[0]['name']}
 
-    narrative = generate_intelligent_narrative(
+Confidence:
+{confidence}
 
-        context=context,
+Conflicts:
+{conflicts}
 
-        ranked_results=ranked_results,
+Narrative:
+{narrative}
+"""
 
-        conflicts=conflicts,
+        log_event(
+            "Decision analysis completed."
+        )
 
-        confidence=confidence
-    )
+        return {
 
-    # ======================================
-    # RETURN OUTPUT
-    # ======================================
+            "ranked_results": ranked_results,
 
-    return {
+            "confidence": confidence,
 
-        "context": context,
+            "conflicts": conflicts,
 
-        "conflicts": conflicts,
+            "questions": questions,
 
-        "questions": questions,
+            "narrative": narrative,
 
-        "weights": weights,
+            "report": report
+        }
 
-        "ranked_results": ranked_results,
+    except Exception as e:
 
-        "confidence": confidence,
+        log_error(str(e))
 
-        "report": report,
+        return {
 
-        "narrative": narrative
-    }
+            "ranked_results": pd.DataFrame(),
+
+            "confidence": "Low",
+
+            "conflicts": [],
+
+            "questions": [],
+
+            "narrative": f"Pipeline failed: {str(e)}",
+
+            "report": str(e)
+        }
