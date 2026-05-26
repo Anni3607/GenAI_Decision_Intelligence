@@ -1,5 +1,6 @@
 import os
 import re
+import json
 
 from groq import Groq
 
@@ -33,7 +34,7 @@ def clean_response(text):
     return text.strip()
 
 # =====================================================
-# GENERATE REASONING
+# GENERIC AI REASONING
 # =====================================================
 
 def generate_reasoning(prompt):
@@ -59,3 +60,77 @@ def generate_reasoning(prompt):
     except Exception as e:
 
         return f"AI reasoning failed: {str(e)}"
+
+# =====================================================
+# EXTRACT DECISION CONTEXT
+# =====================================================
+
+def extract_decision_context(user_input):
+
+    prompt = f"""
+You are an intelligent decision analysis engine.
+
+Extract the following from the user input:
+
+1. Priorities
+2. Concerns
+3. Goals
+4. Preferences
+5. Constraints
+
+Return STRICT JSON format only.
+
+User Input:
+{user_input}
+"""
+
+    try:
+
+        completion = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {
+                    "role": "user",
+                    "content": prompt
+                }
+            ],
+            temperature=0.3,
+            max_tokens=700
+        )
+
+        response = completion.choices[0].message.content
+
+        response = response.strip()
+
+        json_match = re.search(
+            r"\{.*\}",
+            response,
+            re.DOTALL
+        )
+
+        if json_match:
+
+            parsed = json.loads(
+                json_match.group()
+            )
+
+            return parsed
+
+        return {
+            "priorities": [],
+            "concerns": [],
+            "goals": [],
+            "preferences": [],
+            "constraints": []
+        }
+
+    except Exception as e:
+
+        return {
+            "error": str(e),
+            "priorities": [],
+            "concerns": [],
+            "goals": [],
+            "preferences": [],
+            "constraints": []
+        }
