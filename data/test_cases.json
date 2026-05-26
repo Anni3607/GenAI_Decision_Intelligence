@@ -1,0 +1,26 @@
+[
+    {
+        "name": "Balanced Professional",
+        "input": "\n        I want stable career growth,\n        decent salary,\n        good work-life balance,\n        and low stress.\n        "
+    },
+    {
+        "name": "Aggressive Ambition",
+        "input": "\n        I want maximum salary,\n        rapid promotion,\n        and I am willing to work very hard.\n        "
+    },
+    {
+        "name": "Burnout Sensitive",
+        "input": "\n        I previously burned out badly.\n        I want flexibility,\n        low stress,\n        and psychological stability.\n        "
+    },
+    {
+        "name": "Conflicting Priorities",
+        "input": "\n        I want very high salary,\n        but also extremely low stress,\n        maximum flexibility,\n        and fast promotions.\n        "
+    },
+    {
+        "name": "Minimal Input",
+        "input": "\n        I want a good career.\n        "
+    },
+    {
+        "name": "Empty Style Input",
+        "input": "\n        ...\n        "
+    }
+]
