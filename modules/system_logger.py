@@ -1,70 +1,61 @@
-
-import logging
 import os
+from datetime import datetime
 
-
-# ==========================================
+# =====================================================
 # LOCAL LOG DIRECTORY
-# ==========================================
+# =====================================================
 
-LOG_DIR = "/content/logs"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+LOG_DIR = os.path.join(BASE_DIR, "logs")
 
 os.makedirs(
     LOG_DIR,
     exist_ok=True
 )
 
-LOG_FILE = os.path.join(
+# =====================================================
+# LOG FILES
+# =====================================================
+
+EVENT_LOG_FILE = os.path.join(
     LOG_DIR,
-    "system.log"
+    "events.log"
 )
 
-
-# ==========================================
-# LOGGER
-# ==========================================
-
-logger = logging.getLogger(
-    "DecisionAI"
+ERROR_LOG_FILE = os.path.join(
+    LOG_DIR,
+    "errors.log"
 )
 
-logger.setLevel(logging.INFO)
-
-if logger.hasHandlers():
-
-    logger.handlers.clear()
-
-
-# ==========================================
-# FILE HANDLER
-# ==========================================
-
-file_handler = logging.FileHandler(
-    LOG_FILE
-)
-
-formatter = logging.Formatter(
-    "%(asctime)s | %(levelname)s | %(message)s"
-)
-
-file_handler.setFormatter(
-    formatter
-)
-
-logger.addHandler(
-    file_handler
-)
-
-
-# ==========================================
-# FUNCTIONS
-# ==========================================
+# =====================================================
+# EVENT LOGGER
+# =====================================================
 
 def log_event(message):
 
-    logger.info(message)
+    timestamp = datetime.now().strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
 
+    with open(EVENT_LOG_FILE, "a") as f:
+
+        f.write(
+            f"[{timestamp}] EVENT: {message}\n"
+        )
+
+# =====================================================
+# ERROR LOGGER
+# =====================================================
 
 def log_error(message):
 
-    logger.error(message)
+    timestamp = datetime.now().strftime(
+        "%Y-%m-%d %H:%M:%S"
+    )
+
+    with open(ERROR_LOG_FILE, "a") as f:
+
+        f.write(
+            f"[{timestamp}] ERROR: {message}\n"
+        )
