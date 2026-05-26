@@ -19,29 +19,37 @@ from modules.confidence_engine import (
 )
 
 # =====================================================
-# SIMPLE SCORING ENGINE
+# DYNAMIC WEIGHTED SCORING ENGINE
 # =====================================================
 
 def score_options(
     options,
-    benefit_criteria,
-    cost_criteria
+    criteria,
+    weights
 ):
 
     scored_df = options.copy()
 
-    scored_df["benefit_score"] = scored_df[
-        benefit_criteria
-    ].sum(axis=1)
+    final_scores = []
 
-    scored_df["cost_score"] = scored_df[
-        cost_criteria
-    ].sum(axis=1)
+    for _, row in scored_df.iterrows():
 
-    scored_df["final_score"] = (
-        scored_df["benefit_score"]
-        - scored_df["cost_score"]
-    )
+        total_score = 0
+
+        for criterion in criteria:
+
+            criterion_score = (
+                row[criterion]
+                * weights[criterion]
+            )
+
+            total_score += criterion_score
+
+        final_scores.append(
+            total_score
+        )
+
+    scored_df["final_score"] = final_scores
 
     scored_df = scored_df.sort_values(
         by="final_score",
@@ -62,8 +70,8 @@ def score_options(
 def run_decision_analysis(
     user_input,
     options,
-    benefit_criteria,
-    cost_criteria
+    criteria,
+    weights
 ):
 
     try:
@@ -85,9 +93,9 @@ def run_decision_analysis(
         # =============================================
 
         ranked_results = score_options(
-            options,
-            benefit_criteria,
-            cost_criteria
+            options=options,
+            criteria=criteria,
+            weights=weights
         )
 
         # =============================================
@@ -108,7 +116,7 @@ def run_decision_analysis(
         )
 
         # =============================================
-        # QUESTIONS
+        # ADAPTIVE QUESTIONS
         # =============================================
 
         questions = []
@@ -116,17 +124,17 @@ def run_decision_analysis(
         if len(conflicts) > 0:
 
             questions.append(
-                "Which factor matters more when tradeoffs occur?"
+                "Which criteria matter most when tradeoffs occur?"
             )
 
         if confidence == "Low":
 
             questions.append(
-                "Can you provide more detailed priorities?"
+                "Would you like to refine your priorities further?"
             )
 
         # =============================================
-        # NARRATIVE
+        # NARRATIVE GENERATION
         # =============================================
 
         narrative = generate_intelligent_narrative(
@@ -137,26 +145,34 @@ def run_decision_analysis(
         )
 
         # =============================================
-        # REPORT
+        # EXPLAINABILITY REPORT
         # =============================================
 
-        report = f'''
+        top_option = ranked_results.iloc[0]["name"]
+
+        report = f"""
 ==============================
 GENAI DECISION REPORT
 ==============================
 
 Recommended Option:
-{ranked_results.iloc[0]["name"]}
+{top_option}
 
 Confidence:
 {confidence}
 
-Conflicts:
+Detected Conflicts:
 {conflicts}
 
-Narrative:
+Applied Criteria:
+{criteria}
+
+Criteria Weights:
+{weights}
+
+Narrative Analysis:
 {narrative}
-'''
+"""
 
         log_event(
             "Decision analysis completed."
