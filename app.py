@@ -44,6 +44,7 @@ st.markdown(
         border-radius: 14px;
         border: 1px solid rgba(255,255,255,0.08);
         text-align: center;
+        margin-bottom: 12px;
     }
 
     </style>
@@ -79,7 +80,8 @@ domain = st.sidebar.selectbox(
         "Investment",
         "Tech Purchase",
         "Food",
-        "Fitness"
+        "Fitness",
+        "Fashion"
     ]
 )
 
@@ -252,7 +254,7 @@ if st.button("Run Decision Analysis"):
     ranked_results = results["ranked_results"]
 
     # =================================================
-    # CONFIDENCE PERCENTAGE
+    # CONFIDENCE %
     # =================================================
 
     score_gap = (
@@ -361,7 +363,7 @@ if st.button("Run Decision Analysis"):
         )
 
         fig1, ax1 = plt.subplots(
-            figsize=(8, 5)
+            figsize=(5, 3)
         )
 
         ax1.bar(
@@ -373,7 +375,10 @@ if st.button("Run Decision Analysis"):
             "Weighted Score"
         )
 
-        st.pyplot(fig1)
+        st.pyplot(
+            fig1,
+            use_container_width=False
+        )
 
         plt.close(fig1)
 
@@ -399,7 +404,7 @@ if st.button("Run Decision Analysis"):
         angles += angles[:1]
 
         fig2, ax2 = plt.subplots(
-            figsize=(7, 7),
+            figsize=(4.5, 4.5),
             subplot_kw=dict(polar=True)
         )
 
@@ -437,7 +442,10 @@ if st.button("Run Decision Analysis"):
             loc="upper right"
         )
 
-        st.pyplot(fig2)
+        st.pyplot(
+            fig2,
+            use_container_width=False
+        )
 
         plt.close(fig2)
 
@@ -458,7 +466,7 @@ if st.button("Run Decision Analysis"):
         })
 
         fig3, ax3 = plt.subplots(
-            figsize=(8, 5)
+            figsize=(5, 3)
         )
 
         ax3.barh(
@@ -466,7 +474,10 @@ if st.button("Run Decision Analysis"):
             weight_df["weight"]
         )
 
-        st.pyplot(fig3)
+        st.pyplot(
+            fig3,
+            use_container_width=False
+        )
 
         plt.close(fig3)
 
@@ -483,7 +494,7 @@ if st.button("Run Decision Analysis"):
         )
 
         fig4, ax4 = plt.subplots(
-            figsize=(10, 4)
+            figsize=(6, 2.5)
         )
 
         im = ax4.imshow(
@@ -510,7 +521,10 @@ if st.button("Run Decision Analysis"):
 
         plt.colorbar(im)
 
-        st.pyplot(fig4)
+        st.pyplot(
+            fig4,
+            use_container_width=False
+        )
 
         plt.close(fig4)
 
