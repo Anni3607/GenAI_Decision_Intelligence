@@ -100,6 +100,8 @@ Comparative reasoning improvements
 Memory-aware personalization
 Better narrative compression
 
-Live Demo
+Live Demo :
 
 https://genaidecisionintelligence-ryat7mgcnykutxrz6thnrk.streamlit.app/
+
+
