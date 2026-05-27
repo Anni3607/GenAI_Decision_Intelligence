@@ -146,20 +146,29 @@ for criterion in criteria:
 
 st.markdown("## Evaluation Criteria")
 
-cols = st.columns(len(criteria))
+criteria_rows = [
+    criteria[i:i+3]
+    for i in range(0, len(criteria), 3)
+]
 
-for idx, criterion in enumerate(criteria):
+for row in criteria_rows:
 
-    with cols[idx]:
+    cols = st.columns(len(row))
 
-        st.markdown(
-            f"""
+    for idx, criterion in enumerate(row):
+
+        with cols[idx]:
+
+            st.markdown(
+                f"""
 <div class="glass-box">
 {criterion.replace("_", " ").title()}
 </div>
 """,
-            unsafe_allow_html=True
-        )
+                unsafe_allow_html=True
+            )
+
+st.markdown("<br>", unsafe_allow_html=True)
 
 # =====================================================
 # MAIN ANALYSIS
