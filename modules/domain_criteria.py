@@ -55,5 +55,15 @@ DOMAIN_CRITERIA = {
         "time_required",
         "sustainability",
         "cost"
+    ],
+
+    "Fashion": [
+
+        "style",
+        "comfort",
+        "versatility",
+        "trendiness",
+        "durability",
+        "price"
     ]
 }
