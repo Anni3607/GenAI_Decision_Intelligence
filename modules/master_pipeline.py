@@ -1,5 +1,7 @@
 import pandas as pd
 
+print("MASTER PIPELINE VERSION = NEW_DYNAMIC_V3")
+
 from modules.system_logger import (
     log_event,
     log_error
@@ -38,15 +40,29 @@ def score_options(
 
         for criterion in criteria:
 
-            criterion_score = (
-                row[criterion]
-                * weights[criterion]
-            )
+            try:
 
-            total_score += criterion_score
+                criterion_value = float(
+                    row.get(criterion, 5)
+                )
+
+                criterion_weight = float(
+                    weights.get(criterion, 5)
+                )
+
+                weighted_score = (
+                    criterion_value
+                    * criterion_weight
+                )
+
+                total_score += weighted_score
+
+            except Exception:
+
+                total_score += 0
 
         final_scores.append(
-            total_score
+            round(total_score, 2)
         )
 
     scored_df["final_score"] = final_scores
@@ -64,7 +80,7 @@ def score_options(
     return scored_df
 
 # =====================================================
-# MAIN PIPELINE
+# MAIN DECISION PIPELINE
 # =====================================================
 
 def run_decision_analysis(
@@ -107,7 +123,7 @@ def run_decision_analysis(
         )
 
         # =============================================
-        # CONFIDENCE SCORE
+        # CONFIDENCE SCORING
         # =============================================
 
         confidence = calculate_confidence_score(
@@ -130,7 +146,7 @@ def run_decision_analysis(
         if confidence == "Low":
 
             questions.append(
-                "Would you like to refine your priorities further?"
+                "Would you like to clarify your priorities further?"
             )
 
         # =============================================
@@ -145,32 +161,32 @@ def run_decision_analysis(
         )
 
         # =============================================
-        # EXPLAINABILITY REPORT
+        # REPORT GENERATION
         # =============================================
 
         top_option = ranked_results.iloc[0]["name"]
 
         report = f"""
-==============================
-GENAI DECISION REPORT
-==============================
+==================================================
+GENAI DECISION INTELLIGENCE REPORT
+==================================================
 
 Recommended Option:
 {top_option}
 
-Confidence:
+Confidence Level:
 {confidence}
 
-Detected Conflicts:
+Detected Tradeoffs:
 {conflicts}
 
 Applied Criteria:
 {criteria}
 
-Criteria Weights:
+User Weights:
 {weights}
 
-Narrative Analysis:
+AI Narrative:
 {narrative}
 """
 
@@ -195,7 +211,15 @@ Narrative Analysis:
 
     except Exception as e:
 
-        log_error(str(e))
+        error_message = str(e)
+
+        print(
+            f"PIPELINE ERROR: {error_message}"
+        )
+
+        log_error(
+            error_message
+        )
 
         return {
 
@@ -207,7 +231,7 @@ Narrative Analysis:
 
             "questions": [],
 
-            "narrative": f"Pipeline failed: {str(e)}",
+            "narrative": f"Pipeline failed: {error_message}",
 
-            "report": str(e)
+            "report": error_message
         }
