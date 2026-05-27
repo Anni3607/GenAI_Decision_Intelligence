@@ -263,11 +263,46 @@ if st.button("Run Decision Analysis"):
         ranked_results.iloc[1]["final_score"]
     )
 
+    confidence_percent = int(
+        50 + score_gap
+    )
+
+    # =================================================
+    # SUBJECTIVE UNCERTAINTY PENALTY
+    # =================================================
+
+    SUBJECTIVE_CRITERIA = [
+
+        "taste",
+        "style",
+        "comfort",
+        "trendiness",
+        "design"
+    ]
+
+    subjective_penalty = 0
+
+    for criterion in criteria:
+
+        if criterion in SUBJECTIVE_CRITERIA:
+
+            subjective_penalty += (
+                weights[criterion] * 0.8
+            )
+
+    confidence_percent -= int(
+        subjective_penalty
+    )
+
+    # =================================================
+    # CLAMPING
+    # =================================================
+
     confidence_percent = min(
         95,
         max(
             55,
-            int(50 + score_gap)
+            confidence_percent
         )
     )
 
