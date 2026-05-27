@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
 from modules.master_pipeline import run_decision_analysis
 from modules.domain_criteria import DOMAIN_CRITERIA
@@ -12,8 +13,7 @@ from modules.option_evaluator import evaluate_options
 
 st.set_page_config(
     page_title="GenAI Decision Intelligence",
-    layout="wide",
-    page_icon="🧠"
+    layout="wide"
 )
 
 # =====================================================
@@ -29,25 +29,21 @@ st.markdown(
         color: white;
     }
 
-    .main {
-        background-color: #0f172a;
-        color: white;
-    }
-
-    h1, h2, h3 {
-        color: #f8fafc;
-    }
-
     section[data-testid="stSidebar"] {
         background-color: #111827;
     }
 
+    h1, h2, h3 {
+        color: #f8fafc;
+        font-weight: 600;
+    }
+
     .glass-box {
         background: rgba(255,255,255,0.05);
-        padding: 20px;
-        border-radius: 15px;
+        padding: 16px;
+        border-radius: 14px;
         border: 1px solid rgba(255,255,255,0.08);
-        margin-bottom: 20px;
+        text-align: center;
     }
 
     </style>
@@ -59,38 +55,24 @@ st.markdown(
 # TITLE
 # =====================================================
 
-st.title("🧠 GenAI Decision Intelligence")
+st.title("GenAI Decision Intelligence")
 
-st.markdown(
-    """
-AI-powered multi-domain decision analysis platform for:
-
-- Career Decisions
-- Education Choices
-- Investment Analysis
-- Tech Product Comparisons
-- Food & Lifestyle Decisions
-- Fitness Strategy Evaluation
-
-The system automatically evaluates options using AI,
-applies your personal priorities,
-detects tradeoffs,
-and generates explainable strategic reasoning.
-"""
+st.caption(
+    "AI-assisted multi-criteria decision analysis system."
 )
 
 # =====================================================
 # SIDEBAR
 # =====================================================
 
-st.sidebar.title("⚙️ Decision Setup")
+st.sidebar.title("Decision Setup")
 
 # =====================================================
-# DOMAIN SELECTION
+# DOMAIN
 # =====================================================
 
 domain = st.sidebar.selectbox(
-    "Select Decision Domain",
+    "Domain",
     [
         "Career",
         "Education",
@@ -104,15 +86,15 @@ domain = st.sidebar.selectbox(
 criteria = DOMAIN_CRITERIA[domain]
 
 # =====================================================
-# USER CONTEXT
+# USER INPUT
 # =====================================================
 
 st.sidebar.markdown("---")
 
 user_input = st.sidebar.text_area(
-    "Describe your priorities and goals:",
+    "Priorities & Goals",
     height=180,
-    placeholder="Example: I care most about battery life, long-term reliability, and overall value."
+    placeholder="Describe what matters most to you."
 )
 
 # =====================================================
@@ -134,22 +116,18 @@ for i in range(num_options):
 
     option = st.sidebar.text_input(
         f"Option {i+1}",
-        placeholder="Enter option name"
+        placeholder="Enter option"
     )
 
     option_names.append(option)
 
 # =====================================================
-# CRITERIA WEIGHTS
+# WEIGHTS
 # =====================================================
 
 st.sidebar.markdown("---")
 
-st.sidebar.subheader("🎯 Criteria Importance")
-
-st.sidebar.caption(
-    "Adjust how important each factor is to YOU."
-)
+st.sidebar.subheader("Criteria Importance")
 
 weights = {}
 
@@ -163,31 +141,31 @@ for criterion in criteria:
     )
 
 # =====================================================
-# INFO SECTION
+# CRITERIA DISPLAY
 # =====================================================
 
-st.markdown("## 🧩 Current Evaluation Criteria")
+st.markdown("## Evaluation Criteria")
 
-criteria_cols = st.columns(len(criteria))
+cols = st.columns(len(criteria))
 
 for idx, criterion in enumerate(criteria):
 
-    with criteria_cols[idx]:
+    with cols[idx]:
 
         st.markdown(
             f"""
 <div class="glass-box">
-<b>{criterion.replace("_", " ").title()}</b>
+{criterion.replace("_", " ").title()}
 </div>
 """,
             unsafe_allow_html=True
         )
 
 # =====================================================
-# RUN ANALYSIS
+# MAIN ANALYSIS
 # =====================================================
 
-if st.button("🚀 Run Decision Analysis"):
+if st.button("Run Decision Analysis"):
 
     valid_options = [
 
@@ -217,7 +195,7 @@ if st.button("🚀 Run Decision Analysis"):
     # =================================================
 
     with st.spinner(
-        "🤖 AI is evaluating options..."
+        "Evaluating options..."
     ):
 
         evaluated_scores = evaluate_options(
@@ -248,11 +226,11 @@ if st.button("🚀 Run Decision Analysis"):
     )
 
     # =================================================
-    # MAIN ANALYSIS
+    # MAIN PIPELINE
     # =================================================
 
     with st.spinner(
-        "🧠 Running strategic reasoning engine..."
+        "Generating analysis..."
     ):
 
         results = run_decision_analysis(
@@ -265,56 +243,56 @@ if st.button("🚀 Run Decision Analysis"):
     ranked_results = results["ranked_results"]
 
     # =================================================
+    # CONFIDENCE PERCENTAGE
+    # =================================================
+
+    score_gap = (
+        ranked_results.iloc[0]["final_score"]
+        -
+        ranked_results.iloc[1]["final_score"]
+    )
+
+    confidence_percent = min(
+        95,
+        max(
+            55,
+            int(50 + score_gap)
+        )
+    )
+
+    # =================================================
     # METRICS
     # =================================================
 
     top_option = ranked_results.iloc[0]["name"]
 
-    confidence = results["confidence"]
-
-    conflicts = len(results["conflicts"])
-
-    questions = len(results["questions"])
-
     st.markdown("---")
 
-    col1, col2, col3, col4 = st.columns(4)
+    col1, col2 = st.columns(2)
 
     with col1:
+
         st.metric(
-            "🏆 Recommended",
+            "Recommended Option",
             top_option
         )
 
     with col2:
-        st.metric(
-            "📊 Confidence",
-            confidence
-        )
 
-    with col3:
         st.metric(
-            "⚠️ Conflicts",
-            conflicts
-        )
-
-    with col4:
-        st.metric(
-            "❓ Questions",
-            questions
+            "Confidence",
+            f"{confidence_percent}%"
         )
 
     # =================================================
     # TABS
     # =================================================
 
-    tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
-        "📊 Rankings",
-        "🤖 AI Evaluation",
-        "🧠 Narrative",
-        "⚠️ Tradeoffs",
-        "📈 Visuals",
-        "📋 Report"
+    tab1, tab2, tab3, tab4 = st.tabs([
+        "Rankings",
+        "AI Evaluation",
+        "Narrative",
+        "Visuals"
     ])
 
     # =================================================
@@ -337,7 +315,7 @@ if st.button("🚀 Run Decision Analysis"):
     with tab2:
 
         st.subheader(
-            "AI-Generated Option Evaluation"
+            "AI Generated Evaluation"
         )
 
         st.dataframe(
@@ -352,7 +330,7 @@ if st.button("🚀 Run Decision Analysis"):
     with tab3:
 
         st.subheader(
-            "Narrative Intelligence"
+            "Strategic Narrative"
         )
 
         st.write(
@@ -365,69 +343,170 @@ if st.button("🚀 Run Decision Analysis"):
 
     with tab4:
 
-        st.subheader(
-            "Detected Tradeoffs"
-        )
-
-        if len(results["conflicts"]) == 0:
-
-            st.success(
-                "No major tradeoffs detected."
-            )
-
-        else:
-
-            for conflict in results["conflicts"]:
-
-                st.warning(conflict)
-
-    # =================================================
-    # TAB 5
-    # =================================================
-
-    with tab5:
+        # =============================================
+        # VISUAL 1
+        # =============================================
 
         st.subheader(
             "Final Decision Scores"
         )
 
-        fig, ax = plt.subplots(
+        fig1, ax1 = plt.subplots(
             figsize=(8, 5)
         )
 
-        ax.bar(
+        ax1.bar(
             ranked_results["name"],
             ranked_results["final_score"]
         )
 
-        ax.set_ylabel(
+        ax1.set_ylabel(
             "Weighted Score"
         )
 
-        ax.set_title(
-            "AI Decision Rankings"
-        )
+        st.pyplot(fig1)
 
-        st.pyplot(fig)
+        plt.close(fig1)
 
-        plt.close(fig)
-
-    # =================================================
-    # TAB 6
-    # =================================================
-
-    with tab6:
+        # =============================================
+        # VISUAL 2
+        # =============================================
 
         st.subheader(
-            "Full Explainability Report"
+            "Criteria Radar Comparison"
         )
 
-        st.text(
-            results["report"]
+        labels = criteria
+
+        num_vars = len(labels)
+
+        angles = np.linspace(
+            0,
+            2 * np.pi,
+            num_vars,
+            endpoint=False
+        ).tolist()
+
+        angles += angles[:1]
+
+        fig2, ax2 = plt.subplots(
+            figsize=(7, 7),
+            subplot_kw=dict(polar=True)
         )
+
+        for _, row in options_df.iterrows():
+
+            values = [
+                row[c]
+                for c in criteria
+            ]
+
+            values += values[:1]
+
+            ax2.plot(
+                angles,
+                values,
+                linewidth=2,
+                label=row["name"]
+            )
+
+            ax2.fill(
+                angles,
+                values,
+                alpha=0.1
+            )
+
+        ax2.set_xticks(
+            angles[:-1]
+        )
+
+        ax2.set_xticklabels(
+            labels
+        )
+
+        ax2.legend(
+            loc="upper right"
+        )
+
+        st.pyplot(fig2)
+
+        plt.close(fig2)
+
+        # =============================================
+        # VISUAL 3
+        # =============================================
+
+        st.subheader(
+            "User Priority Weights"
+        )
+
+        weight_df = pd.DataFrame({
+            "criterion": criteria,
+            "weight": [
+                weights[c]
+                for c in criteria
+            ]
+        })
+
+        fig3, ax3 = plt.subplots(
+            figsize=(8, 5)
+        )
+
+        ax3.barh(
+            weight_df["criterion"],
+            weight_df["weight"]
+        )
+
+        st.pyplot(fig3)
+
+        plt.close(fig3)
+
+        # =============================================
+        # VISUAL 4
+        # =============================================
+
+        st.subheader(
+            "Criteria Heatmap"
+        )
+
+        heatmap_df = options_df.set_index(
+            "name"
+        )
+
+        fig4, ax4 = plt.subplots(
+            figsize=(10, 4)
+        )
+
+        im = ax4.imshow(
+            heatmap_df.values,
+            aspect="auto"
+        )
+
+        ax4.set_xticks(
+            np.arange(len(criteria))
+        )
+
+        ax4.set_xticklabels(
+            criteria,
+            rotation=45
+        )
+
+        ax4.set_yticks(
+            np.arange(len(heatmap_df.index))
+        )
+
+        ax4.set_yticklabels(
+            heatmap_df.index
+        )
+
+        plt.colorbar(im)
+
+        st.pyplot(fig4)
+
+        plt.close(fig4)
 
 else:
 
     st.info(
-        "Configure your decision scenario and run the analysis."
+        "Configure your decision scenario to begin analysis."
     )
