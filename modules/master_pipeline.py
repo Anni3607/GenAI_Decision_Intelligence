@@ -1,6 +1,6 @@
 import pandas as pd
 
-print("MASTER PIPELINE VERSION = NEW_DYNAMIC_V3")
+print("MASTER PIPELINE VERSION = COST_AWARE_V4")
 
 from modules.system_logger import (
     log_event,
@@ -20,6 +20,10 @@ from modules.confidence_engine import (
     calculate_confidence_score
 )
 
+from modules.domain_cost_criteria import (
+    DOMAIN_COST_CRITERIA
+)
+
 # =====================================================
 # DYNAMIC WEIGHTED SCORING ENGINE
 # =====================================================
@@ -27,12 +31,18 @@ from modules.confidence_engine import (
 def score_options(
     options,
     criteria,
-    weights
+    weights,
+    domain
 ):
 
     scored_df = options.copy()
 
     final_scores = []
+
+    cost_criteria = DOMAIN_COST_CRITERIA.get(
+        domain,
+        []
+    )
 
     for _, row in scored_df.iterrows():
 
@@ -50,8 +60,24 @@ def score_options(
                     weights.get(criterion, 5)
                 )
 
+                # =====================================
+                # COST CRITERIA INVERSION
+                # =====================================
+
+                if criterion in cost_criteria:
+
+                    adjusted_score = (
+                        11 - criterion_value
+                    )
+
+                else:
+
+                    adjusted_score = (
+                        criterion_value
+                    )
+
                 weighted_score = (
-                    criterion_value
+                    adjusted_score
                     * criterion_weight
                 )
 
@@ -87,7 +113,8 @@ def run_decision_analysis(
     user_input,
     options,
     criteria,
-    weights
+    weights,
+    domain
 ):
 
     try:
@@ -111,7 +138,8 @@ def run_decision_analysis(
         ranked_results = score_options(
             options=options,
             criteria=criteria,
-            weights=weights
+            weights=weights,
+            domain=domain
         )
 
         # =============================================
@@ -141,12 +169,6 @@ def run_decision_analysis(
 
             questions.append(
                 "Which criteria matter most when tradeoffs occur?"
-            )
-
-        if confidence == "Low":
-
-            questions.append(
-                "Would you like to clarify your priorities further?"
             )
 
         # =============================================
@@ -225,7 +247,7 @@ AI Narrative:
 
             "ranked_results": pd.DataFrame(),
 
-            "confidence": "Low",
+            "confidence": 0,
 
             "conflicts": [],
 
