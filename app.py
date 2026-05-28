@@ -45,6 +45,7 @@ st.markdown(
         border: 1px solid rgba(255,255,255,0.08);
         text-align: center;
         margin-bottom: 12px;
+        font-weight: 600;
     }
 
     </style>
@@ -215,6 +216,14 @@ if st.button("Run Decision Analysis"):
             criteria=criteria
         )
 
+    if not evaluated_scores:
+
+        st.error(
+            "AI evaluation failed. Please try again."
+        )
+
+        st.stop()
+
     option_data = []
 
     for option_name, scores in evaluated_scores.items():
@@ -236,6 +245,14 @@ if st.button("Run Decision Analysis"):
         option_data
     )
 
+    if options_df.empty:
+
+        st.error(
+            "No valid evaluation data generated."
+        )
+
+        st.stop()
+
     # =================================================
     # MAIN PIPELINE
     # =================================================
@@ -248,23 +265,34 @@ if st.button("Run Decision Analysis"):
             user_input=user_input,
             options=options_df,
             criteria=criteria,
-            weights=weights
+            weights=weights,
+            domain=domain
         )
 
     ranked_results = results["ranked_results"]
+
+    if ranked_results.empty:
+
+        st.error(
+            "Ranking engine failed."
+        )
+
+        st.stop()
 
     # =================================================
     # CONFIDENCE %
     # =================================================
 
-    score_gap = (
-        ranked_results.iloc[0]["final_score"]
-        -
-        ranked_results.iloc[1]["final_score"]
+    top_score = ranked_results.iloc[0]["final_score"]
+
+    second_score = ranked_results.iloc[1]["final_score"]
+
+    score_gap = abs(
+        top_score - second_score
     )
 
     confidence_percent = int(
-        50 + score_gap
+        55 + (score_gap * 0.6)
     )
 
     # =================================================
@@ -287,7 +315,7 @@ if st.button("Run Decision Analysis"):
         if criterion in SUBJECTIVE_CRITERIA:
 
             subjective_penalty += (
-                weights[criterion] * 0.8
+                weights[criterion] * 1.2
             )
 
     confidence_percent -= int(
@@ -295,13 +323,38 @@ if st.button("Run Decision Analysis"):
     )
 
     # =================================================
+    # USER CONFLICT DETECTION
+    # =================================================
+
+    user_text = user_input.lower()
+
+    contradiction_penalty = 0
+
+    contradictory_pairs = [
+
+        ("cheap", "premium"),
+        ("low effort", "high performance"),
+        ("fast", "sustainable"),
+        ("healthy", "junk"),
+        ("high salary", "low stress")
+    ]
+
+    for a, b in contradictory_pairs:
+
+        if a in user_text and b in user_text:
+
+            contradiction_penalty += 8
+
+    confidence_percent -= contradiction_penalty
+
+    # =================================================
     # CLAMPING
     # =================================================
 
-    confidence_percent = min(
-        95,
-        max(
-            55,
+    confidence_percent = max(
+        40,
+        min(
+            95,
             confidence_percent
         )
     )
@@ -406,10 +459,6 @@ if st.button("Run Decision Analysis"):
             ranked_results["final_score"]
         )
 
-        ax1.set_ylabel(
-            "Weighted Score"
-        )
-
         st.pyplot(
             fig1,
             use_container_width=False
@@ -439,7 +488,7 @@ if st.button("Run Decision Analysis"):
         angles += angles[:1]
 
         fig2, ax2 = plt.subplots(
-            figsize=(4.5, 4.5),
+            figsize=(4, 4),
             subplot_kw=dict(polar=True)
         )
 
@@ -457,12 +506,6 @@ if st.button("Run Decision Analysis"):
                 values,
                 linewidth=2,
                 label=row["name"]
-            )
-
-            ax2.fill(
-                angles,
-                values,
-                alpha=0.1
             )
 
         ax2.set_xticks(
@@ -529,7 +572,7 @@ if st.button("Run Decision Analysis"):
         )
 
         fig4, ax4 = plt.subplots(
-            figsize=(6, 2.5)
+            figsize=(5, 2.5)
         )
 
         im = ax4.imshow(
