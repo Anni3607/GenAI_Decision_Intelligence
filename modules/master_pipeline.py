@@ -1,6 +1,6 @@
 import pandas as pd
 
-print("MASTER PIPELINE VERSION = FINAL_V5")
+print("MASTER PIPELINE VERSION = COST_AWARE_V4")
 
 from modules.system_logger import (
     log_event,
