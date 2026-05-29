@@ -208,12 +208,11 @@ if st.button("Run Decision Analysis"):
     with st.spinner(
         "Evaluating options..."
     ):
-        # Package attributes to align with underlying module definitions
+        # REMOVED: user_input=user_input to prevent the TypeError
         evaluated_scores = evaluate_options(
             domain=domain,
             options=valid_options,
-            criteria=criteria,
-            user_input=user_input
+            criteria=criteria
         )
 
     if not evaluated_scores:
