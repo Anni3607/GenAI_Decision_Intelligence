@@ -20,12 +20,8 @@ MODEL_NAME = "llama-3.3-70b-versatile"
 # AI OPTION EVALUATION
 # =====================================================
 
-def evaluate_options(
-    domain,
-    options,
-    criteria,
-    user_input=""
-):
+def evaluate_options(domain, options, criteria, user_input="", **kwargs):
+    # Keep the rest of your prompt and code exactly the same!
 
     prompt = f"""
 You are a realistic decision intelligence engine.
