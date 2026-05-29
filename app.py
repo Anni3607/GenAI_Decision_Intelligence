@@ -180,7 +180,6 @@ st.markdown("<br>", unsafe_allow_html=True)
 if st.button("Run Decision Analysis"):
 
     valid_options = [
-
         option
         for option in option_names
         if option.strip() != ""
@@ -209,13 +208,13 @@ if st.button("Run Decision Analysis"):
     with st.spinner(
         "Evaluating options..."
     ):
-
+        # Package attributes to align with underlying module definitions
         evaluated_scores = evaluate_options(
-    domain=domain,
-    options=valid_options,
-    criteria=criteria,
-    user_input=user_input
-)
+            domain=domain,
+            options=valid_options,
+            criteria=criteria,
+            user_input=user_input
+        )
 
     if not evaluated_scores:
 
@@ -301,7 +300,6 @@ if st.button("Run Decision Analysis"):
     # =================================================
 
     SUBJECTIVE_CRITERIA = [
-
         "taste",
         "style",
         "comfort",
@@ -332,7 +330,6 @@ if st.button("Run Decision Analysis"):
     contradiction_penalty = 0
 
     contradictory_pairs = [
-
         ("cheap", "premium"),
         ("low effort", "high performance"),
         ("fast", "sustainable"),
