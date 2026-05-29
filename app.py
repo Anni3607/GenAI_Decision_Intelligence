@@ -205,31 +205,21 @@ if st.button("Run Decision Analysis"):
     # AI OPTION EVALUATION
     # =================================================
 
-    with st.spinner(
-        "Evaluating options..."
-    ):
-        try:
-            # First try calling it cleanly without user_input
-            evaluated_scores = evaluate_options(
-                domain=domain,
-                options=valid_options,
-                criteria=criteria
-            )
-        except TypeError:
-            # Fallback wrapper if server memory demands user_input keyword parameter
-            evaluated_scores = evaluate_options(
-                domain=domain,
-                options=valid_options,
-                criteria=criteria,
-                user_input=user_input
-            )
+   # =================================================
+    # AI OPTION EVALUATION
+    # =================================================
 
-    if not evaluated_scores:
-
-        st.error(
-            "AI evaluation failed. Please try again."
+    with st.spinner("Evaluating options..."):
+        # Explicitly pass all variables matching your module parameters
+        evaluated_scores = evaluate_options(
+            domain=domain,
+            options=valid_options,
+            criteria=criteria,
+            user_input=user_input
         )
 
+    if not evaluated_scores:
+        st.error("AI evaluation failed. Please try again.")
         st.stop()
 
     option_data = []
