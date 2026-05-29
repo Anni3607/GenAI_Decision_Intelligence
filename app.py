@@ -186,48 +186,48 @@ if st.button("Run Decision Analysis"):
     ]
 
     if len(valid_options) < 2:
-
-        st.error(
-            "Please enter at least 2 options."
-        )
-
+        st.error("Please enter at least 2 options.")
         st.stop()
 
     if not user_input.strip():
-
-        st.error(
-            "Please describe your priorities."
-        )
-
+        st.error("Please describe your priorities.")
         st.stop()
 
     # =================================================
-    # AI OPTION EVALUATION (ULTIMATE CACHE-PROOF SEQUENCE)
+    # AI OPTION EVALUATION (DIAGNOSTIC MODE)
     # =================================================
 
     with st.spinner("Evaluating options..."):
         evaluated_scores = None
+        captured_error = None
         
-        # Strategy 1: Dynamic fallback loop matching any available signature
-        strategies = [
-            lambda: evaluate_options(domain=domain, options=valid_options, criteria=criteria, user_input=user_input),
-            lambda: evaluate_options(domain, valid_options, criteria, user_input),
-            lambda: evaluate_options(domain=domain, options=valid_options, criteria=criteria),
-            lambda: evaluate_options(domain, valid_options, criteria)
-        ]
-        
-        for run_strategy in strategies:
+        # Sequentially test execution signatures to robustly handle server cached versions
+        try:
+            evaluated_scores = evaluate_options(
+                domain=domain,
+                options=valid_options,
+                criteria=criteria,
+                user_input=user_input
+            )
+        except TypeError:
             try:
-                evaluated_scores = run_strategy()
-                if evaluated_scores:
-                    break
+                evaluated_scores = evaluate_options(domain, valid_options, criteria, user_input)
             except TypeError:
-                continue
-            except Exception:
-                continue
+                try:
+                    evaluated_scores = evaluate_options(domain=domain, options=valid_options, criteria=criteria)
+                except Exception as inner_e:
+                    captured_error = f"Legacy signature call failed: {str(inner_e)}"
+        except Exception as general_e:
+            captured_error = f"Groq or Python Error: {str(general_e)}"
 
+    # Check for empty dictionary returns vs absolute execution failure
+    if evaluated_scores == {}:
+        st.error("❌ AI returned an empty response. This usually means your GROQ_API_KEY is missing/invalid in Streamlit Secrets, or the model 'llama-3.3-70b-versatile' is hitting a rate limit.")
+        st.info("💡 Action Item: Check your Streamlit Cloud Dashboard -> Settings -> Secrets and make sure GROQ_API_KEY is properly saved.")
+        st.stop()
+        
     if not evaluated_scores:
-        st.error("AI evaluation failed. Please verify API configurations or try again.")
+        st.error(f"❌ Execution Error: {captured_error if captured_error else 'Unknown initialization failure'}")
         st.stop()
 
     option_data = []
