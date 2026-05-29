@@ -211,10 +211,11 @@ if st.button("Run Decision Analysis"):
     ):
 
         evaluated_scores = evaluate_options(
-            domain=domain,
-            options=valid_options,
-            criteria=criteria
-        )
+    domain=domain,
+    options=valid_options,
+    criteria=criteria,
+    user_input=user_input
+)
 
     if not evaluated_scores:
 
