@@ -208,12 +208,21 @@ if st.button("Run Decision Analysis"):
     with st.spinner(
         "Evaluating options..."
     ):
-
-        evaluated_scores = evaluate_options(
-            domain=domain,
-            options=valid_options,
-            criteria=criteria
-        )
+        try:
+            # First try calling it cleanly without user_input
+            evaluated_scores = evaluate_options(
+                domain=domain,
+                options=valid_options,
+                criteria=criteria
+            )
+        except TypeError:
+            # Fallback wrapper if server memory demands user_input keyword parameter
+            evaluated_scores = evaluate_options(
+                domain=domain,
+                options=valid_options,
+                criteria=criteria,
+                user_input=user_input
+            )
 
     if not evaluated_scores:
 
@@ -251,7 +260,7 @@ if st.button("Run Decision Analysis"):
     with st.spinner(
         "Generating analysis..."
     ):
-        # FIXED: Added domain back into pipeline parameters
+
         results = run_decision_analysis(
             user_input=user_input,
             options=options_df,
