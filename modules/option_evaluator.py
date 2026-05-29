@@ -1,6 +1,5 @@
 import json
 import re
-
 from groq import Groq
 import streamlit as st
 
@@ -21,7 +20,9 @@ MODEL_NAME = "llama-3.3-70b-versatile"
 # =====================================================
 
 def evaluate_options(domain, options, criteria, user_input="", **kwargs):
-    # Keep the rest of your prompt and code exactly the same!
+
+    # Standardize the input criteria structure to match exactly
+    criteria_list = [c.lower().strip() for c in criteria]
 
     prompt = f"""
 You are a realistic decision intelligence engine.
@@ -42,7 +43,7 @@ OPTIONS:
 {options}
 
 CRITERIA:
-{criteria}
+{criteria_list}
 
 =====================================================
 
@@ -63,180 +64,34 @@ IMPORTANT RULES
 If the user explicitly states a goal,
 that goal should strongly influence evaluation.
 
-Examples:
-
-If the user says:
-"I only care about salary"
-
-then salary differences should be emphasized.
-
-If the user says:
-"I only care about health"
-
-then health-related criteria should be emphasized.
-
-If the user says:
-"I want something cheap"
-
-then affordability should be emphasized.
-
 =====================================================
 
 ANTI-BIAS RULES
-
-Do NOT assume:
-
-- startups are always better for growth
-- corporates are always better for salary
-- luxury products are always superior
-- expensive automatically means better
-- premium brands always win
+Do NOT assume brand premium always wins. Evaluate purely on merit.
 
 =====================================================
 
 SCORING GUIDELINES
-
 1-3 = poor
-
 4-6 = average
-
 7-8 = strong
-
 9 = exceptional
-
 10 = extremely rare
 
-Most real-world options should score
-between 4 and 8.
-
 =====================================================
 
-COMPARISON RULES
-
-Do NOT rank every criterion
-in the same order.
-
-Bad Example:
-
-Google:
-salary=9
-growth=9
-learning=9
-
-Amazon:
-salary=8
-growth=8
-learning=8
-
-Microsoft:
-salary=7
-growth=7
-learning=7
-
-Good Example:
-
-Google:
-salary=9
-growth=8
-learning=8
-
-Amazon:
-salary=8
-growth=9
-learning=9
-
-Microsoft:
-salary=8
-growth=7
-learning=8
-
-=====================================================
-
-REALISM RULES
-
-If two options are reasonably comparable,
-their scores should differ by only 1-3 points.
-
-Avoid unrealistic score gaps.
-
-Strong options should still have weaknesses.
-
-Weak options should still have strengths.
-
-=====================================================
-
-CAREER REALISM
-
-- startups usually increase uncertainty
-- startups often increase stress
-- freelancing introduces income variability
-- government jobs reduce risk
-- large corporates usually offer stability
-- salary depends on role, not stereotypes
-
-=====================================================
-
-FOOD REALISM
-
-- unhealthy foods can score high on taste
-- healthy foods may score lower on cravings
-- fast food should score lower on healthiness
-- expensive food is not automatically healthier
-
-=====================================================
-
-TECH REALISM
-
-- expensive devices should lose on price
-- budget devices can provide strong value
-- premium devices should not dominate every criterion
-
-=====================================================
-
-FASHION REALISM
-
-- luxury products may score higher on style
-- local products often provide better value
-- comfort does not always correlate with price
-- trendiness and durability can conflict
-
-=====================================================
-
-FITNESS REALISM
-
-- effective methods usually require effort
-- low effort rarely produces exceptional outcomes
-- sustainability matters
-
-=====================================================
-
-INVESTMENT REALISM
-
-- higher returns usually imply higher risk
-- stable investments rarely maximize growth
-- liquidity and growth often trade off
-
-=====================================================
-
-Return STRICT JSON ONLY.
-
-NO explanations.
-
-NO markdown.
-
-NO extra text.
+Return VALID JSON ONLY. Do not wrap it in anything other than clean JSON structures.
+The object keys for the criteria MUST exactly match this exact list lowercase: {criteria_list}
 
 FORMAT:
-
 {{
     "Option Name": {{
-        "criterion": score
+        "criterion_key": score
     }}
 }}
 """
 
     try:
-
         completion = client.chat.completions.create(
             model=MODEL_NAME,
             messages=[
@@ -249,55 +104,48 @@ FORMAT:
             max_tokens=1500
         )
 
-        response = (
-            completion
-            .choices[0]
-            .message
-            .content
-            .strip()
-        )
+        response = completion.choices[0].message.content.strip()
 
-        json_match = re.search(
-            r"\{{.*\}}",
-            response,
-            re.DOTALL
-        )
+        # Robustly extract JSON even if enclosed in markdown code fences ```json ... ```
+        if "```" in response:
+            response = response.split("```")[1]
+            if response.startswith("json"):
+                response = response[4:]
+        
+        # Clean regex to find the primary outermost JSON bounding bracket
+        json_match = re.search(r"\{.*\}", response, re.DOTALL)
 
         if json_match:
+            parsed = json.loads(json_match.group())
+            cleaned_parsed = {}
 
-            parsed = json.loads(
-                json_match.group()
-            )
-
-            for option in parsed:
-
-                for criterion in parsed[option]:
-
-                    score = parsed[option][criterion]
-
+            for option_name, scores in parsed.items():
+                cleaned_scores = {}
+                
+                # Normalize keys to lowercase so app.py doesn't miss match variables
+                for criterion, score in scores.items():
+                    norm_criterion = criterion.lower().strip()
+                    
                     try:
-                        score = float(score)
+                        score_val = float(score)
                     except:
-                        score = 5
+                        score_val = 5
 
-                    score = max(
-                        1,
-                        min(
-                            10,
-                            score
-                        )
-                    )
+                    score_val = max(1, min(10, score_val))
+                    cleaned_scores[norm_criterion] = round(score_val)
+                
+                # Backfill any missing metrics just in case LLM missed one
+                for orig_criterion in criteria:
+                    if orig_criterion.lower().strip() not in cleaned_scores:
+                        cleaned_scores[orig_criterion.lower().strip()] = 5
 
-                    parsed[option][criterion] = round(score)
+                cleaned_parsed[option_name] = cleaned_scores
 
-            return parsed
+            return cleaned_parsed
 
         return {}
 
     except Exception as e:
-
-        print(
-            f"Evaluation Error: {str(e)}"
-        )
-
+        # Also print to Streamlit logs for debugging clarity
+        st.sidebar.error(f"Groq API Call Error: {str(e)}")
         return {}
