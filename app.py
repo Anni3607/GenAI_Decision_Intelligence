@@ -202,21 +202,34 @@ if st.button("Run Decision Analysis"):
         st.stop()
 
     # =================================================
-    # AI OPTION EVALUATION
-    # =================================================
-
-   # =================================================
-    # AI OPTION EVALUATION
+    # AI OPTION EVALUATION (DYNAMIC CACHE-PROOF WRAPPER)
     # =================================================
 
     with st.spinner("Evaluating options..."):
-        # Explicitly pass all variables matching your module parameters
-        evaluated_scores = evaluate_options(
-            domain=domain,
-            options=valid_options,
-            criteria=criteria,
-            user_input=user_input
-        )
+        try:
+            # Route A: Try passing everything cleanly via keywords
+            evaluated_scores = evaluate_options(
+                domain=domain,
+                options=valid_options,
+                criteria=criteria,
+                user_input=user_input
+            )
+        except TypeError:
+            try:
+                # Route B: Try positional calling if keyword map causes conflict
+                evaluated_scores = evaluate_options(
+                    domain, 
+                    valid_options, 
+                    criteria, 
+                    user_input
+                )
+            except TypeError:
+                # Route C: Safe Fallback if server runs the legacy 3-parameter module cache
+                evaluated_scores = evaluate_options(
+                    domain=domain,
+                    options=valid_options,
+                    criteria=criteria
+                )
 
     if not evaluated_scores:
         st.error("AI evaluation failed. Please try again.")
