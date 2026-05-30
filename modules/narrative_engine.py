@@ -90,6 +90,24 @@ RULES
 
 9. Never claim facts not present in the provided information.
 
+If the user says:
+
+"I want stability"
+
+then job_security should strongly influence scoring.
+
+If the user says:
+
+"I want a safe career"
+
+then job_security should strongly influence scoring.
+
+If the user says:
+
+"I want long-term security"
+
+then job_security should strongly influence scoring.
+
 ====================================================
 
 OUTPUT FORMAT
