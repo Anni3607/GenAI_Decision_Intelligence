@@ -8,7 +8,7 @@ DOMAIN_CRITERIA = {
     "stress",
     "learning",
     "job_security"
-]
+    ],
 
     "Education": [
 
