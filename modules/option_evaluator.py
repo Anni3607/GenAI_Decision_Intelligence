@@ -280,8 +280,6 @@ FORMAT:
 
         return cleaned_parsed
 
-    print("MODEL =", MODEL_NAME)
-
     except Exception as e:
 
         print("========== GROQ ERROR ==========")
