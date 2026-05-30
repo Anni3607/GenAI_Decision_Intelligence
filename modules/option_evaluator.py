@@ -18,7 +18,7 @@ client = Groq(
     api_key=GROQ_API_KEY
 )
 
-MODEL_NAME = "llama3-70b-8192"
+MODEL_NAME = "llama-3.3-70b-versatile"
 
 # =====================================================
 # AI OPTION EVALUATION
