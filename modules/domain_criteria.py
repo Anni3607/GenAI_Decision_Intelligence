@@ -1,14 +1,14 @@
 DOMAIN_CRITERIA = {
 
     "Career": [
-
-        "salary",
-        "career_growth",
-        "work_life_balance",
-        "flexibility",
-        "stress",
-        "learning"
-    ],
+    "salary",
+    "career_growth",
+    "work_life_balance",
+    "flexibility",
+    "stress",
+    "learning",
+    "job_security"
+]
 
     "Education": [
 
