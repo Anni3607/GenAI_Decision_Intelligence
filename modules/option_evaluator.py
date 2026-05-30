@@ -21,8 +21,10 @@ MODEL_NAME = "llama-3.3-70b-versatile"
 
 def evaluate_options(domain, options, criteria, user_input="", **kwargs):
 
-    # Standardize the input criteria structure to match exactly
-    criteria_list = [c.lower().strip() for c in criteria]
+    criteria_list = [
+        c.lower().strip()
+        for c in criteria
+    ]
 
     prompt = f"""
 You are a realistic decision intelligence engine.
@@ -64,34 +66,112 @@ IMPORTANT RULES
 If the user explicitly states a goal,
 that goal should strongly influence evaluation.
 
+Examples:
+
+"I only care about salary"
+
+→ salary should influence scoring heavily.
+
+"I only care about health"
+
+→ health-related criteria should dominate.
+
 =====================================================
 
 ANTI-BIAS RULES
-Do NOT assume brand premium always wins. Evaluate purely on merit.
+
+Do NOT assume:
+
+- startups are always better
+- corporates are always better
+- luxury is always better
+- expensive means better
+- famous brands always win
 
 =====================================================
 
-SCORING GUIDELINES
+REALISM RULES
+
+Most real-world scores should be:
+
 1-3 = poor
 4-6 = average
 7-8 = strong
 9 = exceptional
 10 = extremely rare
 
+Avoid unrealistic score gaps.
+
+Strong options should still have weaknesses.
+
+Weak options should still have strengths.
+
 =====================================================
 
-Return VALID JSON ONLY. Do not wrap it in anything other than clean JSON structures.
-The object keys for the criteria MUST exactly match this exact list lowercase: {criteria_list}
+CAREER REALISM
+
+- startups often increase uncertainty
+- startups often increase stress
+- freelancing increases income variability
+- government jobs reduce risk
+- large corporates usually improve stability
+
+=====================================================
+
+FOOD REALISM
+
+- unhealthy foods can score high on taste
+- healthy foods may score lower on cravings
+- fast food should score lower on healthiness
+
+=====================================================
+
+TECH REALISM
+
+- premium devices should lose on price
+- budget devices can offer better value
+
+=====================================================
+
+FASHION REALISM
+
+- luxury may improve style
+- local products may improve value
+- comfort does not always correlate with price
+
+=====================================================
+
+FITNESS REALISM
+
+- effectiveness usually requires effort
+- fast results often reduce sustainability
+
+=====================================================
+
+INVESTMENT REALISM
+
+- higher returns usually imply higher risk
+- stable investments rarely maximize growth
+
+=====================================================
+
+RETURN STRICT JSON ONLY.
+
+CRITERION KEYS MUST MATCH EXACTLY:
+
+{criteria_list}
 
 FORMAT:
+
 {{
     "Option Name": {{
-        "criterion_key": score
+        "criterion_name": score
     }}
 }}
 """
 
     try:
+
         completion = client.chat.completions.create(
             model=MODEL_NAME,
             messages=[
@@ -104,48 +184,105 @@ FORMAT:
             max_tokens=1500
         )
 
-        response = completion.choices[0].message.content.strip()
+        response = completion.choices[0].message.content
 
-        # Robustly extract JSON even if enclosed in markdown code fences ```json ... ```
+        if response is None:
+            print("GROQ RETURNED NONE")
+            return {}
+
+        response = response.strip()
+
+        print("========== RAW GROQ RESPONSE ==========")
+        print(response)
+        print("=======================================")
+
         if "```" in response:
-            response = response.split("```")[1]
-            if response.startswith("json"):
-                response = response[4:]
-        
-        # Clean regex to find the primary outermost JSON bounding bracket
-        json_match = re.search(r"\{.*\}", response, re.DOTALL)
 
-        if json_match:
-            parsed = json.loads(json_match.group())
-            cleaned_parsed = {}
+            parts = response.split("```")
 
-            for option_name, scores in parsed.items():
-                cleaned_scores = {}
-                
-                # Normalize keys to lowercase so app.py doesn't miss match variables
-                for criterion, score in scores.items():
-                    norm_criterion = criterion.lower().strip()
-                    
-                    try:
-                        score_val = float(score)
-                    except:
-                        score_val = 5
+            if len(parts) >= 2:
+                response = parts[1]
 
-                    score_val = max(1, min(10, score_val))
-                    cleaned_scores[norm_criterion] = round(score_val)
-                
-                # Backfill any missing metrics just in case LLM missed one
-                for orig_criterion in criteria:
-                    if orig_criterion.lower().strip() not in cleaned_scores:
-                        cleaned_scores[orig_criterion.lower().strip()] = 5
+                if response.startswith("json"):
+                    response = response[4:]
 
-                cleaned_parsed[option_name] = cleaned_scores
+                response = response.strip()
 
-            return cleaned_parsed
+        json_match = re.search(
+            r"\{.*\}",
+            response,
+            re.DOTALL
+        )
 
-        return {}
+        if not json_match:
+
+            print("JSON MATCH FAILED")
+            print(response)
+
+            return {}
+
+        parsed = json.loads(
+            json_match.group()
+        )
+
+        cleaned_parsed = {}
+
+        for option_name, scores in parsed.items():
+
+            cleaned_scores = {}
+
+            for criterion, score in scores.items():
+
+                normalized_criterion = (
+                    str(criterion)
+                    .lower()
+                    .strip()
+                )
+
+                try:
+                    score_value = float(score)
+
+                except Exception:
+                    score_value = 5
+
+                score_value = max(
+                    1,
+                    min(
+                        10,
+                        score_value
+                    )
+                )
+
+                cleaned_scores[
+                    normalized_criterion
+                ] = round(score_value)
+
+            for criterion in criteria_list:
+
+                if criterion not in cleaned_scores:
+
+                    cleaned_scores[
+                        criterion
+                    ] = 5
+
+            cleaned_parsed[
+                option_name
+            ] = cleaned_scores
+
+        print("========== CLEANED JSON ==========")
+        print(cleaned_parsed)
+        print("==================================")
+
+        return cleaned_parsed
 
     except Exception as e:
-        # Also print to Streamlit logs for debugging clarity
-        st.sidebar.error(f"Groq API Call Error: {str(e)}")
+
+        print("========== GROQ ERROR ==========")
+        print(str(e))
+        print("================================")
+
+        st.sidebar.error(
+            f"Groq API Call Error: {str(e)}"
+        )
+
         return {}
