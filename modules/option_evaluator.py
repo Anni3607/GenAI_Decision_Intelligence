@@ -7,13 +7,18 @@ import streamlit as st
 # API CONFIG
 # =====================================================
 
-GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
+try:
+    GROQ_API_KEY = st.secrets["GROQ_API_KEY"]
+    print("SECRET FOUND")
+except Exception as e:
+    print("SECRET ERROR:", str(e))
+    GROQ_API_KEY = None
 
 client = Groq(
     api_key=GROQ_API_KEY
 )
 
-MODEL_NAME = "llama-3.3-70b-versatile"
+MODEL_NAME = "llama3-70b-8192"
 
 # =====================================================
 # AI OPTION EVALUATION
@@ -274,6 +279,8 @@ FORMAT:
         print("==================================")
 
         return cleaned_parsed
+
+    print("MODEL =", MODEL_NAME)
 
     except Exception as e:
 
