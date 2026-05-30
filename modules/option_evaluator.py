@@ -118,8 +118,10 @@ CAREER REALISM
 - startups often increase uncertainty
 - startups often increase stress
 - freelancing increases income variability
-- government jobs reduce risk
-- large corporates usually improve stability
+- government jobs usually score highest in job_security
+- large corporates usually score high in job_security
+- startups usually score lowest in job_security
+- high career growth does not always imply high job_security
 
 =====================================================
 
