@@ -13,32 +13,109 @@ def generate_intelligent_narrative(
     confidence
 ):
 
-    top_option = ranked_results.iloc[0]["name"]
+    try:
 
-    prompt = f"""
-You are an advanced AI decision strategist.
+        top_option = ranked_results.iloc[0]["name"]
 
-User Context:
+        if len(ranked_results) > 1:
+
+            second_option = ranked_results.iloc[1]["name"]
+
+            score_gap = round(
+                ranked_results.iloc[0]["final_score"]
+                -
+                ranked_results.iloc[1]["final_score"],
+                2
+            )
+
+        else:
+
+            second_option = "N/A"
+
+            score_gap = 0
+
+        prompt = f"""
+You are an objective decision analyst.
+
+USER GOAL:
 {user_input}
 
-Top Recommended Option:
+TOP RECOMMENDATION:
 {top_option}
 
-Detected Conflicts:
+SECOND BEST OPTION:
+{second_option}
+
+SCORE GAP:
+{score_gap}
+
+DETECTED CONFLICTS:
 {conflicts}
 
-Confidence Level:
+CONFIDENCE:
 {confidence}
 
-Generate:
-1. A strategic explanation
-2. Tradeoff analysis
-3. Why this option ranks highest
-4. Practical real-world interpretation
+====================================================
+
+RULES
+
+1. Use ONLY the information provided.
+
+2. Do NOT invent:
+- salaries
+- statistics
+- percentages
+- studies
+- reports
+- surveys
+- benchmarks
+
+3. Do NOT mention:
+- Glassdoor
+- LinkedIn
+- Forbes
+- McKinsey
+- external websites
+- external research
+
+4. Be realistic.
+
+5. Mention both strengths and weaknesses.
+
+6. Explain tradeoffs clearly.
+
+7. Explain why the recommendation won.
+
+8. Keep the explanation concise.
+
+9. Never claim facts not present in the provided information.
+
+====================================================
+
+OUTPUT FORMAT
+
+Strategic Explanation:
+(2-4 sentences)
+
+Tradeoff Analysis:
+(2-4 sentences)
+
+Why It Ranked Highest:
+(2-4 sentences)
+
+Practical Interpretation:
+(2-4 sentences)
 """
 
-    response = generate_reasoning(
-        prompt
-    )
+        response = generate_reasoning(
+            prompt
+        )
 
-    return response
+        return response
+
+    except Exception as e:
+
+        return (
+            f"Unable to generate narrative. "
+            f"Reason: {str(e)}"
+        )
