@@ -157,7 +157,7 @@ FITNESS REALISM
 
 INVESTMENT REALISM
 
-- higher returns usually imply higher risk
+- higher returns usually imply higher risks
 - stable investments rarely maximize growth
 
 =====================================================
