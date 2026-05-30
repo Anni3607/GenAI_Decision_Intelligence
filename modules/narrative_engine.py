@@ -1,6 +1,5 @@
-from modules.ai_reasoning import (
-    generate_reasoning
-)
+from modules.ai_reasoning import generate_reasoning
+
 
 # =====================================================
 # NARRATIVE GENERATION
@@ -18,38 +17,30 @@ def generate_intelligent_narrative(
         top_option = ranked_results.iloc[0]["name"]
 
         if len(ranked_results) > 1:
-
             second_option = ranked_results.iloc[1]["name"]
-
-            score_gap = round(
-                ranked_results.iloc[0]["final_score"]
-                -
-                ranked_results.iloc[1]["final_score"],
-                2
-            )
-
         else:
+            second_option = "None"
 
-            second_option = "N/A"
-
-            score_gap = 0
+        ranking_table = ranked_results.to_dict(
+            orient="records"
+        )
 
         prompt = f"""
-You are an objective decision analyst.
+You are an intelligent decision advisor.
 
 USER GOAL:
 {user_input}
 
-TOP RECOMMENDATION:
+RANKED RESULTS:
+{ranking_table}
+
+TOP OPTION:
 {top_option}
 
-SECOND BEST OPTION:
+SECOND OPTION:
 {second_option}
 
-SCORE GAP:
-{score_gap}
-
-DETECTED CONFLICTS:
+CONFLICTS:
 {conflicts}
 
 CONFIDENCE:
@@ -59,70 +50,78 @@ CONFIDENCE:
 
 RULES
 
-1. Use ONLY the information provided.
+1. Write naturally.
 
-2. Do NOT invent:
+2. Sound like a smart advisor,
+not a corporate consultant.
+
+3. Explain the decision in plain English.
+
+4. Use ONLY information from the ranking data.
+
+5. Never invent:
 - salaries
 - statistics
-- percentages
 - studies
-- reports
-- surveys
+- percentages
 - benchmarks
+- market reports
 
-3. Do NOT mention:
-- Glassdoor
-- LinkedIn
-- Forbes
-- McKinsey
-- external websites
-- external research
+6. Never mention:
+- score gap
+- weighted scoring
+- algorithm
+- confidence calculations
 
-4. Be realistic.
+7. Mention both strengths and weaknesses.
 
-5. Mention both strengths and weaknesses.
+8. Mention what the user gains.
 
-6. Explain tradeoffs clearly.
+9. Mention what the user sacrifices.
 
-7. Explain why the recommendation won.
+10. Make the recommendation easy to understand.
 
-8. Keep the explanation concise.
+11. Adapt to ANY domain:
+- career
+- education
+- investment
+- food
+- fitness
+- technology
+- fashion
+- lifestyle
+- travel
+- products
 
-9. Never claim facts not present in the provided information.
-
-If the user says:
-
-"I want stability"
-
-then job_security should strongly influence scoring.
-
-If the user says:
-
-"I want a safe career"
-
-then job_security should strongly influence scoring.
-
-If the user says:
-
-"I want long-term security"
-
-then job_security should strongly influence scoring.
+12. Keep it concise.
 
 ====================================================
 
 OUTPUT FORMAT
 
-Strategic Explanation:
-(2-4 sentences)
+## Recommendation
 
-Tradeoff Analysis:
-(2-4 sentences)
+Explain in 3-5 sentences why the top option is the best match.
 
-Why It Ranked Highest:
-(2-4 sentences)
+## Main Advantages
 
-Practical Interpretation:
-(2-4 sentences)
+- point
+- point
+- point
+
+## Trade-Offs
+
+- point
+- point
+- point
+
+## When You Should Choose It
+
+2-4 sentences.
+
+## When You Should Avoid It
+
+2-4 sentences.
 """
 
         response = generate_reasoning(
