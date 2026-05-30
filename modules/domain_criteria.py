@@ -23,7 +23,7 @@ DOMAIN_CRITERIA = {
     "Investment": [
 
         "returns",
-        "risk",
+        "safety",
         "liquidity",
         "stability",
         "growth_potential"
